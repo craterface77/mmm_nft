@@ -5,7 +5,8 @@ const { signDataByUser } = require("./helpers/sign");
 const tokenName = "MMMToken";
 const tokenSymbol = "MMM";
 const metadata =
-  "https://ipfs.io/ipfs/QmP5Aq9xnduntChzojeRTGuPngcC3J33hsmSJgw95UV6G2/Hamster_1.json";
+  "QmP5Aq9xnduntChzojeRTGuPngcC3J33hsmSJgw95UV6G2/Hamster_1.json";
+const url = "https://ipfs.io/ipfs/";
 
 const ownerRole = ethers.utils.id("OWNER_ERC721_ROLE");
 let accounts;
@@ -23,7 +24,12 @@ describe("MMM_NFT 721", function () {
     user2 = accounts[2];
 
     const Contract = await ethers.getContractFactory("MMM721");
-    token = await Contract.connect(owner).deploy(tokenName, tokenSymbol, 100);
+    token = await Contract.connect(owner).deploy(
+      tokenName,
+      tokenSymbol,
+      100,
+      url
+    );
     await token.deployed();
 
     domainToken = {
@@ -93,6 +99,8 @@ describe("MMM_NFT 721", function () {
           gasLimit: 3000000,
           value: amount,
         });
+
+      assert.equal(await token.tokenURI(0), url + metadata);
     });
 
     it("Mint with the same signature", async function () {
@@ -199,46 +207,31 @@ describe("MMM_NFT 721", function () {
     it("Should posible to set new royalty values", async function () {
       const tokenId = 1;
       const salePrice = 10000;
-      const royaltyFeeInBeeps = 1000;
+      const royaltyFeeInBeeps = 900;
       await token
-        .connect(owner)
-        .setRoyaltyInfo(owner.address, royaltyFeeInBeeps, {
+        .connect(user2)
+        .setRoyaltyInfo(user2.address, royaltyFeeInBeeps, {
           gasLimit: 3000000,
         });
       const royaltyInfo = await token
-        .connect(owner)
+        .connect(user2)
         .royaltyInfo(tokenId, salePrice);
-      assert.equal(royaltyInfo[1], "1000");
-    });
-
-    it("Should not be posible to set new royalty values", async function () {
-      const tokenId = 1;
-      const salePrice = 10000;
-      const royaltyFeeInBeeps = 1000;
-      await token
-        .connect(owner)
-        .setRoyaltyInfo(owner.address, royaltyFeeInBeeps, {
-          gasLimit: 3000000,
-        });
-      const royaltyInfo = await token
-        .connect(owner)
-        .royaltyInfo(tokenId, salePrice);
-      assert.equal(royaltyInfo[1], "1000");
+      assert.equal(royaltyInfo[1], "900");
     });
 
     it("Should not posible to set new royalty values by not owner", async function () {
       const tokenId = 1;
       const salePrice = 10000;
-      const royaltyFeeInBeeps = 1100;
+      const royaltyFeeInBeeps = 990;
       await expect(
-        token.connect(user2).setRoyaltyInfo(owner.address, royaltyFeeInBeeps, {
+        token.connect(user1).setRoyaltyInfo(owner.address, royaltyFeeInBeeps, {
           gasLimit: 3000000,
         })
       ).to.be.revertedWith("Caller is not a owner.");
       const royaltyInfo = await token
         .connect(owner)
         .royaltyInfo(tokenId, salePrice);
-      assert.equal(royaltyInfo[1], "1000");
+      assert.equal(royaltyInfo[1], "900");
     });
 
     it("Should posible to set new royalty values for token", async function () {
@@ -246,7 +239,7 @@ describe("MMM_NFT 721", function () {
       const salePrice = 10000;
       const royaltyFeeInBeeps = 500;
       await token
-        .connect(owner)
+        .connect(user2)
         .setTokenRoyalty(tokenId, owner.address, royaltyFeeInBeeps, {
           gasLimit: 3000000,
         });
@@ -254,6 +247,21 @@ describe("MMM_NFT 721", function () {
         .connect(owner)
         .royaltyInfo(tokenId, salePrice);
       assert.equal(royaltyInfo[1], "500");
+    });
+
+    it("Should posible to set new royalty values", async function () {
+      const tokenId = 1;
+      const salePrice = 10000;
+      const royaltyFeeInBeeps = 1000;
+      await token
+        .connect(user2)
+        .setRoyaltyInfo(user2.address, royaltyFeeInBeeps, {
+          gasLimit: 3000000,
+        });
+      const royaltyInfo = await token
+        .connect(user2)
+        .royaltyInfo(tokenId, salePrice);
+      assert.equal(royaltyInfo[1], "1000");
     });
 
     it("The default value should be kept", async function () {
@@ -311,8 +319,8 @@ describe("MMM_NFT 721", function () {
     it("burn by admin", async function () {
       assert.equal(await token.ownerOf(1), user1.address);
       assert.equal(await token.ownerOf(2), user1.address);
-      await token.connect(owner).burn(1);
-      await token.connect(owner).burn(2);
+      await token.connect(user2).burn(1);
+      await token.connect(user2).burn(2);
 
       await expect(token.ownerOf(1)).to.be.revertedWith(
         "ERC721: invalid token ID"

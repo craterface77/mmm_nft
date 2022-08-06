@@ -23,6 +23,8 @@ contract MMM721 is
     bytes32 public constant OWNER_ERC721_ROLE = keccak256("OWNER_ERC721_ROLE");
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
+    string internal _baseTokenURI;
+
     event RoyaltyChanged(address receiver, uint96 royaltyFeesInBips);
     event TokenRoyaltyChanged(
         uint256 tokenId,
@@ -33,6 +35,7 @@ contract MMM721 is
     event Burn(uint256 tokenId);
     event SetMaxQuantity(uint16 newMaxQuantity);
     event ETHUnlocked(uint256 ethAmount);
+    event SetBaseURI(string baseURI_);
 
     /// @dev Check if caller is minter
 
@@ -44,7 +47,10 @@ contract MMM721 is
     /// @dev Check if caller is owner
 
     modifier onlyOwner() {
-        require(hasRole(MINTER_ROLE, msg.sender), "Caller is not a owner.");
+        require(
+            hasRole(OWNER_ERC721_ROLE, msg.sender),
+            "Caller is not a owner."
+        );
         _;
     }
 
@@ -56,7 +62,8 @@ contract MMM721 is
     constructor(
         string memory name,
         string memory symbol,
-        uint96 royaltyFeesInBips
+        uint96 royaltyFeesInBips,
+        string memory baseURI
     ) ERC721(name, symbol) {
         __Signature_init("Token", "1");
         _setupRole(OWNER_ERC721_ROLE, _msgSender());
@@ -64,6 +71,7 @@ contract MMM721 is
         _setRoleAdmin(MINTER_ROLE, OWNER_ERC721_ROLE);
         _setupRole(MINTER_ROLE, _msgSender());
         setRoyaltyInfo(_msgSender(), royaltyFeesInBips);
+        setBaseURI(baseURI);
     }
 
     /// Returns random number between 0 and max
@@ -76,6 +84,20 @@ contract MMM721 is
             uint256(
                 keccak256(abi.encodePacked(block.timestamp, msg.sender, seed))
             ) % max;
+    }
+
+    /// @dev Set the base URI
+    /// @param baseURI_ Base path to metadata
+
+    function setBaseURI(string memory baseURI_) public onlyOwner {
+        _baseTokenURI = baseURI_;
+        emit SetBaseURI(baseURI_);
+    }
+
+    /// @dev Get current base uri
+
+    function _baseURI() internal view override returns (string memory) {
+        return _baseTokenURI;
     }
 
     /// @dev Return the token URI. Included baseUri concatenated with tokenUri

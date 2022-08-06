@@ -31,15 +31,22 @@ module.exports = {
     timeout: 3000000000000,
   },
   networks: {
+    rinkeby: {
+      url: `https://rinkeby.infura.io/v3/${process.env.INFURA_KEY}`,
+      accounts: [process.env.DEV_KEY],
+      gasPrice: 2500000000,
+      gasMultiplier: 1,
+      chainId: 4,
+    },
     matic: {
       url: "https://rpc-mainnet.matic.quiknode.pro",
       chainId: 137,
-      accounts: [process.env.DEV_KEY],
+      accounts: [process.env.PRIVATE_KEY],
     },
     mumbai: {
       url: "https://rpc-mumbai.maticvigil.com",
       gasPrice: 4300000000,
-      accounts: [process.env.DEV_KEY],
+      accounts: [process.env.PRIVATE_KEY],
     },
     localhost: {
       url: `http://127.0.0.1:8545`,
